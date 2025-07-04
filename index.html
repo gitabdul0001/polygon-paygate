@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html>
+<head><title>Polygon Paygate</title></head>
+<body>
+  <button id="connect">Connect Wallet</button>
+  <button id="pay">Pay 0.01 POL</button>
+
+  <script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.min.js"></script>
+  <script>
+    let userAddress;
+    const targetAddress = "0x15005E6e7f4aA7d5910fFd1E364c691E6b175eD4";
+
+    document.getElementById("connect").onclick = async () => {
+      const [addr] = await window.ethereum.request({ method: "eth_requestAccounts" });
+      userAddress = addr;
+      alert("Connected: " + addr);
+    };
+
+    document.getElementById("pay").onclick = async () => {
+      const provider = new ethers.providers.Web3Provider(window.ethereum);
+      const signer = provider.getSigner();
+
+      const tx = await signer.sendTransaction({
+        to: targetAddress,
+        value: ethers.utils.parseEther("0.01")
+      });
+
+      await tx.wait();
+      alert("Payment sent!");
+
+      const res = await fetch("/api/verify", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ userAddress })
+      });
+
+      const data = await res.json();
+      if (data.access) window.location.href = data.url;
+      else alert("Payment not verified yet!");
+    };
+  </script>
+</body>
+</html>
+
