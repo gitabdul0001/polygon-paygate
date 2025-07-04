@@ -1,42 +1,72 @@
 <!DOCTYPE html>
 <html>
-<head><title>Polygon Paygate</title></head>
-<body>
-  <button id="connect">Connect Wallet</button>
-  <button id="pay">Pay 0.01 POL</button>
-
+<head>
+  <title>Polygon Paywall</title>
   <script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.min.js"></script>
+</head>
+<body>
+  <h2>Access Whop.com after paying 0.01 POL</h2>
+  <button id="connect">🔗 Connect Wallet</button>
+  <button id="pay">💸 Pay 0.01 POL</button>
+
   <script>
     let userAddress;
     const targetAddress = "0x15005E6e7f4aA7d5910fFd1E364c691E6b175eD4";
 
+    // Connect wallet button
     document.getElementById("connect").onclick = async () => {
-      const [addr] = await window.ethereum.request({ method: "eth_requestAccounts" });
-      userAddress = addr;
-      alert("Connected: " + addr);
+      if (!window.ethereum) return alert("MetaMask not found!");
+
+      try {
+        // Switch to Polygon
+        await window.ethereum.request({
+          method: "wallet_switchEthereumChain",
+          params: [{ chainId: "0x89" }] // Polygon Mainnet
+        });
+
+        const accounts = await window.ethereum.request({ method: "eth_requestAccounts" });
+        userAddress = accounts[0];
+        alert("Wallet connected: " + userAddress);
+      } catch (err) {
+        console.error("Connection error:", err);
+        alert("Could not connect wallet.");
+      }
     };
 
+    // Pay 0.01 POL and verify
     document.getElementById("pay").onclick = async () => {
-      const provider = new ethers.providers.Web3Provider(window.ethereum);
-      const signer = provider.getSigner();
+      if (!userAddress) return alert("Connect wallet first");
 
-      const tx = await signer.sendTransaction({
-        to: targetAddress,
-        value: ethers.utils.parseEther("0.01")
-      });
+      console.log("Pay clicked");
 
-      await tx.wait();
-      alert("Payment sent!");
+      try {
+        const provider = new ethers.providers.Web3Provider(window.ethereum);
+        const signer = provider.getSigner();
 
-      const res = await fetch("/api/verify", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ userAddress })
-      });
+        const tx = await signer.sendTransaction({
+          to: targetAddress,
+          value: ethers.utils.parseUnits("0.01", 18) // 0.01 POL
+        });
 
-      const data = await res.json();
-      if (data.access) window.location.href = data.url;
-      else alert("Payment not verified yet!");
+        await tx.wait();
+        alert("Payment sent!");
+
+        const res = await fetch("/api/verify", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ userAddress })
+        });
+
+        const data = await res.json();
+        if (data.access) {
+          window.location.href = data.url;
+        } else {
+          alert("Payment not verified yet. Try again in a moment.");
+        }
+      } catch (err) {
+        console.error("Payment error:", err);
+        alert("Payment failed: " + err.message);
+      }
     };
   </script>
 </body>
