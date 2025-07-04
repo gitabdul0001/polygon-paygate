@@ -25,7 +25,6 @@ module.exports = async (req, res) => {
       return res.status(200).json({ access: false });
     }
 
-    // Confirm tx is sent from userAddress to your RECEIVER
     if (
       receipt.from.toLowerCase() !== userAddress.toLowerCase() ||
       receipt.to.toLowerCase() !== RECEIVER
@@ -33,12 +32,13 @@ module.exports = async (req, res) => {
       return res.status(200).json({ access: false });
     }
 
-    return res.status(200).json({ access: true, url: "https://whop.com" });
+    res.status(200).json({ access: true, url: "https://whop.com" });
   } catch (error) {
-    console.error("Verify error:", error);
+    console.error("Verify API error:", error);
     res.status(500).json({ error: "Server error" });
   }
 };
+
 
 
 
