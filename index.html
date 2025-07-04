@@ -1,27 +1,70 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Polygon Paywall</title>
+  <title>Umi Devnet Paywall</title>
   <script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.umd.min.js" defer></script>
 </head>
 <body>
-  <h2>Pay 0.01 POL to Access</h2>
+  <h2>Pay 0.01 ETH on Umi Devnet to Access</h2>
   <button id="connect">Connect Wallet</button>
-  <button id="pay1">Pay 0.01 POL</button>
+  <button id="pay1">Pay 0.01 ETH</button>
 
   <script defer>
     document.addEventListener("DOMContentLoaded", () => {
       let userAddress;
-      const targetAddress = "0x15005E6e7f4aA7d5910fFd1E364c691E6b175eD4";
+      const receiver = "0x4c3D7a355b1828957449AE562c56967a13565b9D";
 
-      document.getElementById("connect").onclick = async () => {
-        if (!window.ethereum) return alert("MetaMask not found!");
+      async function switchToUmiDevnet() {
+        if (!window.ethereum) {
+          alert("Please install MetaMask");
+          return false;
+        }
         try {
           await window.ethereum.request({
             method: "wallet_switchEthereumChain",
-            params: [{ chainId: "0x89" }],
+            params: [{ chainId: "0xA435" }], // 42069 decimal = 0xA435 hex
           });
-          const accounts = await ethereum.request({ method: "eth_requestAccounts" });
+          return true;
+        } catch (switchError) {
+          // This error code indicates the chain has not been added to MetaMask.
+          if (switchError.code === 4902) {
+            try {
+              await window.ethereum.request({
+                method: "wallet_addEthereumChain",
+                params: [{
+                  chainId: "0xA435",
+                  chainName: "Umi Devnet",
+                  nativeCurrency: {
+                    name: "Ether",
+                    symbol: "ETH",
+                    decimals: 18,
+                  },
+                  rpcUrls: ["https://devnet.uminetwork.com"],
+                  blockExplorerUrls: ["https://devnet.explorer.moved.network"],
+                }],
+              });
+              return true;
+            } catch (addError) {
+              alert("Failed to add Umi Devnet: " + addError.message);
+              return false;
+            }
+          } else {
+            alert("Failed to switch network: " + switchError.message);
+            return false;
+          }
+        }
+      }
+
+      document.getElementById("connect").onclick = async () => {
+        if (!window.ethereum) {
+          alert("MetaMask not detected");
+          return;
+        }
+        const switched = await switchToUmiDevnet();
+        if (!switched) return;
+
+        try {
+          const accounts = await window.ethereum.request({ method: "eth_requestAccounts" });
           userAddress = accounts[0];
           alert("Wallet connected: " + userAddress);
         } catch (err) {
@@ -39,14 +82,17 @@
       }
 
       document.getElementById("pay1").onclick = async () => {
-        if (!userAddress) return alert("Please connect your wallet first.");
+        if (!userAddress) {
+          alert("Please connect your wallet first.");
+          return;
+        }
 
         try {
           const provider = new ethers.providers.Web3Provider(window.ethereum);
           const signer = provider.getSigner();
 
           const tx = await signer.sendTransaction({
-            to: targetAddress,
+            to: receiver,
             value: ethers.utils.parseUnits("0.01", 18),
           });
 
@@ -58,7 +104,7 @@
             return;
           }
 
-          alert("Payment confirmed! Verifying...");
+          alert("Payment confirmed! Verifying backend...");
 
           const res = await fetch("/api/verify", {
             method: "POST",
@@ -67,10 +113,11 @@
           });
 
           const data = await res.json();
+
           if (data.access) {
             window.location.href = data.url;
           } else {
-            alert("Payment not verified by backend.");
+            alert("Payment verification failed.");
           }
         } catch (err) {
           alert("Error: " + err.message);
