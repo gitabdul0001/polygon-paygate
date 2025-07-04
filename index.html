@@ -7,37 +7,37 @@
 <body>
   <h2>Access Whop.com after paying 0.01 POL</h2>
   <button id="connect">🔗 Connect Wallet</button>
-  <button id="pay">💸 Pay 0.01 POL</button>
+  <button id="pay1">💸 Pay 0.01 POL</button>
 
   <script>
     let userAddress;
     const targetAddress = "0x15005E6e7f4aA7d5910fFd1E364c691E6b175eD4";
 
-    // Connect wallet button
+    // Connect wallet
     document.getElementById("connect").onclick = async () => {
       if (!window.ethereum) return alert("MetaMask not found!");
 
       try {
-        // Switch to Polygon
+        // Switch to Polygon Mainnet
         await window.ethereum.request({
           method: "wallet_switchEthereumChain",
-          params: [{ chainId: "0x89" }] // Polygon Mainnet
+          params: [{ chainId: "0x89" }]
         });
 
-        const accounts = await window.ethereum.request({ method: "eth_requestAccounts" });
+        const accounts = await ethereum.request({ method: "eth_requestAccounts" });
         userAddress = accounts[0];
         alert("Wallet connected: " + userAddress);
       } catch (err) {
         console.error("Connection error:", err);
-        alert("Could not connect wallet.");
+        alert("Could not connect or switch to Polygon.");
       }
     };
 
-    // Pay 0.01 POL and verify
-    document.getElementById("pay").onclick = async () => {
-      if (!userAddress) return alert("Connect wallet first");
+    // Pay and verify
+    document.getElementById("pay1").onclick = async () => {
+      if (!userAddress) return alert("Connect your wallet first.");
 
-      console.log("Pay clicked");
+      console.log("Pay1 clicked");
 
       try {
         const provider = new ethers.providers.Web3Provider(window.ethereum);
@@ -45,7 +45,7 @@
 
         const tx = await signer.sendTransaction({
           to: targetAddress,
-          value: ethers.utils.parseUnits("0.01", 18) // 0.01 POL
+          value: ethers.utils.parseUnits("0.01", 18)
         });
 
         await tx.wait();
@@ -61,16 +61,18 @@
         if (data.access) {
           window.location.href = data.url;
         } else {
-          alert("Payment not verified yet. Try again in a moment.");
+          alert("Payment not verified yet. Try again in 30 seconds.");
         }
+
       } catch (err) {
         console.error("Payment error:", err);
-        alert("Payment failed: " + err.message);
+        alert("Transaction failed: " + err.message);
       }
     };
   </script>
 </body>
 </html>
+
 
 
 
