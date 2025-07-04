@@ -98,19 +98,26 @@
             return;
           }
 
+          const message = "Verify address for paywall access";
+          const signature = await signer.signMessage(message);
+
           alert("Payment confirmed! Verifying backend...");
 
           const res = await fetch("/api/verify", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ userAddress, txHash: tx.hash }),
+            body: JSON.stringify({
+              userAddress,
+              txHash: tx.hash,
+              signature
+            }),
           });
 
           const data = await res.json();
           if (data.access) {
             window.location.href = data.url;
           } else {
-            alert("Backend verification failed.");
+            alert("Backend verification failed: " + (data.reason || data.error));
           }
         } catch (err) {
           alert("Error: " + err.message);
