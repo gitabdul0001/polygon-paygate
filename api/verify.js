@@ -1,32 +1,27 @@
-const { ethers } = require("ethers");
+import { ethers } from "ethers";
 
-const provider = new ethers.providers.JsonRpcProvider("https://polygon-rpc.com");
+const provider = new ethers.JsonRpcProvider("https://polygon-rpc.com");
 const RECEIVER = "0x15005E6e7f4aA7d5910fFd1E364c691E6b175eD4".toLowerCase();
-const REQUIRED = ethers.utils.parseEther("0.01");
+const REQUIRED = ethers.parseEther("0.01");
 
-module.exports = async (req, res) => {
+export default async function handler(req, res) {
   if (req.method !== "POST") {
-    res.status(405).json({ error: "Only POST allowed" });
-    return;
+    return res.status(405).json({ error: "Only POST allowed" });
   }
 
   try {
-    // Manually parse body (required in Vercel)
-    const chunks = [];
-    for await (const chunk of req) chunks.push(chunk);
-    const rawBody = Buffer.concat(chunks).toString();
-    const body = JSON.parse(rawBody);
+    const { userAddress } = req.body;
 
-    const userAddress = body.userAddress?.toLowerCase();
     if (!userAddress) {
       return res.status(400).json({ error: "Missing userAddress" });
     }
 
-    const txs = await provider.getHistory(userAddress);
+    const lower = userAddress.toLowerCase();
+    const history = await provider.getHistory(lower);
 
-    const paid = txs.some(tx =>
+    const paid = history.some(tx =>
       tx.to?.toLowerCase() === RECEIVER &&
-      tx.value.gte(REQUIRED)
+      tx.value >= REQUIRED
     );
 
     if (paid) {
@@ -36,10 +31,11 @@ module.exports = async (req, res) => {
     }
 
   } catch (err) {
-    console.error("VERIFY BACKEND ERROR:", err);
-    res.status(500).json({ error: "Server error" });
+    console.error("❌ VERIFY ERROR", err);
+    return res.status(500).json({ error: "Server error" });
   }
-};
+}
+
 
 
 
