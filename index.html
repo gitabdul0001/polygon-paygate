@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
   <meta charset="UTF-8">
   <title>Polygon Paywall</title>
@@ -57,10 +57,12 @@
           });
 
           const data = await res.json();
+          console.log("Verify response:", data);
+
           if (data.access) {
             window.location.href = data.url;
           } else {
-            alert("Payment not verified. Try again shortly.");
+            alert("Payment not verified yet. Try again soon.");
           }
 
         } catch (err) {
@@ -72,6 +74,7 @@
   </script>
 </body>
 </html>
+
 
 
 
