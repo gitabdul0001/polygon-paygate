@@ -5,18 +5,17 @@ const RECEIVER = "0x4c3D7a355b1828957449AE562c56967a13565b9D".toLowerCase();
 
 module.exports = async (req, res) => {
   if (req.method !== "POST") {
-    res.status(405).json({ error: "Only POST allowed" });
-    return;
+    return res.status(405).json({ error: "Only POST allowed" });
   }
 
   try {
     let body = "";
     for await (const chunk of req) body += chunk;
+
     const { userAddress, txHash } = JSON.parse(body);
 
     if (!userAddress || !txHash) {
-      res.status(400).json({ error: "Missing userAddress or txHash" });
-      return;
+      return res.status(400).json({ error: "Missing userAddress or txHash" });
     }
 
     const receipt = await provider.getTransactionReceipt(txHash);
@@ -33,11 +32,12 @@ module.exports = async (req, res) => {
     }
 
     return res.status(200).json({ access: true, url: "https://whop.com" });
-  } catch (error) {
-    console.error("Verify error:", error);
-    res.status(500).json({ error: "Server error" });
+  } catch (err) {
+    console.error("VERIFY ERROR:", err);
+    return res.status(500).json({ error: "Internal server error" });
   }
 };
+
 
 
 
