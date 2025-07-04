@@ -1,0 +1,8 @@
+{
+  "name": "polygon-paygate",
+  "version": "1.0.0",
+  "main": "index.js",
+  "dependencies": {
+    "ethers": "^5.7.2"
+  }
+}
