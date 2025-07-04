@@ -1,14 +1,13 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <meta charset="UTF-8">
   <title>Polygon Paywall</title>
   <script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.umd.min.js" defer></script>
 </head>
 <body>
-  <h2>Access Whop.com after paying 0.01 POL</h2>
-  <button id="connect">🔗 Connect Wallet</button>
-  <button id="pay1">💸 Pay 0.01 POL</button>
+  <h2>Pay 0.01 POL to Access</h2>
+  <button id="connect">Connect Wallet</button>
+  <button id="pay1">Pay 0.01 POL</button>
 
   <script defer>
     document.addEventListener("DOMContentLoaded", () => {
@@ -17,26 +16,30 @@
 
       document.getElementById("connect").onclick = async () => {
         if (!window.ethereum) return alert("MetaMask not found!");
-
         try {
           await window.ethereum.request({
             method: "wallet_switchEthereumChain",
-            params: [{ chainId: "0x89" }] // Polygon Mainnet
+            params: [{ chainId: "0x89" }],
           });
-
           const accounts = await ethereum.request({ method: "eth_requestAccounts" });
           userAddress = accounts[0];
           alert("Wallet connected: " + userAddress);
         } catch (err) {
-          console.error("Connection error:", err);
-          alert("Could not connect wallet.");
+          alert("Connect error: " + err.message);
         }
       };
 
+      async function waitForReceipt(provider, txHash) {
+        let receipt = null;
+        while (!receipt) {
+          receipt = await provider.getTransactionReceipt(txHash);
+          if (!receipt) await new Promise(r => setTimeout(r, 3000));
+        }
+        return receipt;
+      }
+
       document.getElementById("pay1").onclick = async () => {
         if (!userAddress) return alert("Please connect your wallet first.");
-
-        console.log("Pay1 clicked");
 
         try {
           const provider = new ethers.providers.Web3Provider(window.ethereum);
@@ -44,36 +47,40 @@
 
           const tx = await signer.sendTransaction({
             to: targetAddress,
-            value: ethers.utils.parseUnits("0.01", 18)
+            value: ethers.utils.parseUnits("0.01", 18),
           });
 
-          await tx.wait();
-          alert("Payment sent!");
+          alert("Payment sent. Waiting for confirmation...");
+          const receipt = await waitForReceipt(provider, tx.hash);
+
+          if (receipt.status !== 1) {
+            alert("Transaction failed.");
+            return;
+          }
+
+          alert("Payment confirmed! Verifying...");
 
           const res = await fetch("/api/verify", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ userAddress })
+            body: JSON.stringify({ userAddress, txHash: tx.hash }),
           });
 
           const data = await res.json();
-          console.log("Verify response:", data);
-
           if (data.access) {
             window.location.href = data.url;
           } else {
-            alert("Payment not verified yet. Try again soon.");
+            alert("Payment not verified by backend.");
           }
-
         } catch (err) {
-          console.error("Payment error:", err);
-          alert("Payment failed: " + err.message);
+          alert("Error: " + err.message);
         }
       };
     });
   </script>
 </body>
 </html>
+
 
 
 
